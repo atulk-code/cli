@@ -802,6 +802,30 @@ network.add_argument(
         'The Transfer-Encoding header is set to chunked.'
     )
 )
+network.add_argument(
+    '--sequence',
+    default=False,
+    action='store_true',
+    short_help='Execute multiple requests from stdin sequentially.',
+    help="""
+    Read multiple request definitions from stdin and execute them
+    sequentially, one at a time. Each request is separated by a blank line.
+
+    Example usage:
+        cat requests.txt | http --sequence
+
+    Where requests.txt contains:
+        GET https://httpbin.org/get
+
+        POST https://httpbin.org/post name=alice
+
+        GET https://httpbin.org/headers
+
+    Each request uses standard HTTPie argument syntax.
+
+    """,
+)
+
 
 #######################################################################
 # SSL
