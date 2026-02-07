@@ -43,6 +43,21 @@ def raw_main(
     if is_daemon_mode(args):
         return run_daemon_task(env, args)
 
+    # Handle WebSocket URLs early (ws:// and wss://)
+    # WebSocket connections require a different protocol handler
+    from httpie.websocket import is_websocket_url, extract_websocket_args, run_websocket_session
+    for arg in args:
+        if isinstance(arg, str) and is_websocket_url(arg):
+            url, headers, auth, timeout, verify_ssl = extract_websocket_args(args)
+            return run_websocket_session(
+                url=url,
+                env=env,
+                headers=headers,
+                auth=auth,
+                timeout=timeout,
+                verify_ssl=verify_ssl,
+            )
+
     # Handle --sequence mode early, before argument parsing
     # since --sequence doesn't require a URL on the command line
     if '--sequence' in args:
