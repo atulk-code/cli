@@ -43,6 +43,48 @@ def raw_main(
     if is_daemon_mode(args):
         return run_daemon_task(env, args)
 
+    # Handle WebSocket URLs early (ws:// and wss://)
+    # WebSocket connections require a different protocol handler
+    from httpie.websocket import is_websocket_url, extract_websocket_args, run_websocket_session
+    for arg in args:
+        if isinstance(arg, str) and is_websocket_url(arg):
+            url, headers, auth, timeout, verify_ssl = extract_websocket_args(args)
+            return run_websocket_session(
+                url=url,
+                env=env,
+                headers=headers,
+                auth=auth,
+                timeout=timeout,
+                verify_ssl=verify_ssl,
+            )
+
+    # Handle --sequence mode early, before argument parsing
+    # since --sequence doesn't require a URL on the command line
+    if '--sequence' in args:
+        from httpie.sequence import parse_sequence_from_stdin, run_sequence
+
+        # --sequence requires stdin input
+        if env.stdin_isatty:
+            env.log_error(
+                '--sequence requires input from stdin '
+                '(pipe or redirect a file containing requests)'
+            )
+            return ExitStatus.ERROR
+
+        # Read all stdin content
+        stdin_content = env.stdin.read()
+        if isinstance(stdin_content, bytes):
+            stdin_content = stdin_content.decode('utf-8', errors='replace')
+
+        request_args_list = parse_sequence_from_stdin(stdin_content)
+
+        if not request_args_list:
+            env.log_error('No requests found in stdin')
+            return ExitStatus.ERROR
+
+        # Run all requests sequentially
+        return run_sequence(request_args_list, env)
+
     plugin_manager.load_installed_plugins(env.config.plugins_dir)
 
     if use_default_options and env.config.default_options:

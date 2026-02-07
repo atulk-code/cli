@@ -159,6 +159,36 @@ class TestDownloads:
             downloader.finish()
             assert not downloader.interrupted
 
+    def test_download_with_Content_Encoding_gzip(self, mock_env, httpbin_both):
+        """
+        Test that when Content-Encoding is present, downloads are not flagged
+        as interrupted even if the decompressed bytes exceed Content-Length.
+
+        This verifies the fix for https://github.com/httpie/cli/issues/1642
+        where gzipped responses incorrectly triggered "Incomplete download" errors
+        because Content-Length is the compressed size but requests auto-decompresses.
+        """
+        with open(os.devnull, 'w') as devnull:
+            downloader = Downloader(mock_env, output_file=devnull)
+            downloader.start(
+                initial_url='/',
+                final_response=Response(
+                    url=httpbin_both.url + '/',
+                    headers={
+                        # Compressed size in Content-Length
+                        'Content-Length': 100,
+                        'Content-Encoding': 'gzip',
+                    }
+                )
+            )
+            # Simulate receiving decompressed data (more than Content-Length)
+            downloader.chunk_downloaded(b'x' * 500)
+            downloader.chunk_downloaded(b'y' * 500)
+            downloader.finish()
+            # Should NOT be interrupted since Content-Encoding was present
+            # and Content-Length was correctly ignored
+            assert not downloader.interrupted
+
     def test_download_output_from_content_disposition(self, mock_env, httpbin_both):
         with tempfile.TemporaryDirectory() as tmp_dirname:
             orig_cwd = os.getcwd()
