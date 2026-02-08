@@ -619,6 +619,36 @@ sessions.add_argument(
 
 
 #######################################################################
+# Headers from file
+#######################################################################
+
+headers_from_file = options.add_group('Headers from file')
+
+headers_from_file.add_argument(
+    '--headers-file',
+    dest='headers_file',
+    metavar='HEADERS_FILE',
+    default=None,
+    short_help='Read headers from a file.',
+    help="""
+    Read multiple headers from a file. The file should contain one header
+    per line in the format "Name: Value". Empty lines and lines starting
+    with '#' are ignored.
+
+    Example file content:
+
+        Authorization: Bearer token123
+        X-Custom-Header: value
+        # This is a comment
+        Accept: application/json
+
+    This is similar to curl's ability to read headers from a file with -H @file.
+
+    """,
+)
+
+
+#######################################################################
 # Authentication
 #######################################################################
 

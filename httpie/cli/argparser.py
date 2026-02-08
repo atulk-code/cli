@@ -467,6 +467,10 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
             self.args.params = request_items.params
             self.args.multipart_data = request_items.multipart_data
 
+        # Process --headers-file if provided
+        if getattr(self.args, 'headers_file', None):
+            self._parse_headers_file()
+
         if self.args.files and not self.args.form:
             # `http url @/path/to/file`
             request_file = None
@@ -488,6 +492,40 @@ class HTTPieArgumentParser(BaseHTTPieArgumentParser):
                 content_type = get_content_type(fn)
                 if content_type:
                     self.args.headers['Content-Type'] = content_type
+
+    def _parse_headers_file(self):
+        """
+        Parse headers from a file specified by --headers-file.
+        
+        Each line should be in "Name: Value" format.
+        Empty lines and lines starting with '#' are ignored.
+        """
+        headers_file = self.args.headers_file
+        try:
+            with open(os.path.expanduser(headers_file), 'r', encoding='utf-8') as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    # Skip empty lines and comments
+                    if not line or line.startswith('#'):
+                        continue
+                    # Parse "Name: Value" format
+                    if ':' not in line:
+                        self.error(
+                            f'{headers_file}:{line_num}: Invalid header format. '
+                            f'Expected "Name: Value", got: {line!r}'
+                        )
+                    name, value = line.split(':', 1)
+                    name = name.strip()
+                    value = value.strip()
+                    if not name:
+                        self.error(
+                            f'{headers_file}:{line_num}: Empty header name in: {line!r}'
+                        )
+                    # Add header (headers from file have lower priority than CLI headers)
+                    if name not in self.args.headers:
+                        self.args.headers[name] = value
+        except OSError as e:
+            self.error(f'Cannot read headers file: {headers_file}: {e}')
 
     def _process_output_options(self):
         """Apply defaults to output options, or validate the provided ones.
