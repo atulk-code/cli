@@ -28,7 +28,7 @@ class TestEncodedFlag:
         
         try:
             # Run httpie with --encoded, saving output to file
-            result = subprocess.run(
+            _result = subprocess.run(
                 [sys.executable, '-m', 'httpie', '--encoded', '--body', 
                  '--output', output_file, httpbin.url + '/gzip'],
                 capture_output=True,
