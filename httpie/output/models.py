@@ -24,6 +24,7 @@ class ProcessingOptions(NamedTuple):
 
     json: bool = False
     format_options: Dict[str, Any] = PARSED_DEFAULT_FORMAT_OPTIONS
+    encoded: bool = False
 
     def get_prettify(self, env: Environment) -> List[str]:
         if self.prettify is PRETTY_STDOUT_TTY_ONLY:

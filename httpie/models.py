@@ -61,11 +61,31 @@ class HTTPMessage:
 class HTTPResponse(HTTPMessage):
     """A :class:`requests.models.Response` wrapper."""
 
+    def __init__(self, orig, encoded: bool = False):
+        super().__init__(orig)
+        self._encoded = encoded
+
     def iter_body(self, chunk_size=1):
-        return self._orig.iter_content(chunk_size=chunk_size)
+        if self._encoded:
+            # Return raw (non-decoded) response body
+            # This preserves Content-Encoding (gzip, deflate, br)
+            raw = self._orig.raw
+            while True:
+                chunk = raw.read(chunk_size, decode_content=False)
+                if not chunk:
+                    break
+                yield chunk
+        else:
+            return self._orig.iter_content(chunk_size=chunk_size)
 
     def iter_lines(self, chunk_size):
-        return ((line, b'\n') for line in self._orig.iter_lines(chunk_size))
+        if self._encoded:
+            # For encoded responses, we can't reliably split by lines
+            # since the content is compressed, so just yield chunks
+            for chunk in self.iter_body(chunk_size):
+                yield chunk, b''
+        else:
+            return ((line, b'\n') for line in self._orig.iter_lines(chunk_size))
 
     @property
     def headers(self):
