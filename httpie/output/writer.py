@@ -138,8 +138,15 @@ def build_output_stream_for_message(
     )
     if extra_stream_kwargs:
         stream_kwargs.update(extra_stream_kwargs)
+    
+    # Create the message wrapper, passing encoded flag to HTTPResponse
+    if output_options.kind == RequestsMessageKind.RESPONSE:
+        msg = message_type(requests_message, encoded=processing_options.encoded)
+    else:
+        msg = message_type(requests_message)
+    
     yield from stream_class(
-        msg=message_type(requests_message),
+        msg=msg,
         output_options=output_options,
         **stream_kwargs,
     )

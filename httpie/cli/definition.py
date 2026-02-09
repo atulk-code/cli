@@ -240,6 +240,27 @@ processing_options.add_argument(
     """,
 )
 
+processing_options.add_argument(
+    '--encoded',
+    action='store_true',
+    default=False,
+    short_help='Do not decode the response body (show raw Content-Encoding).',
+    help="""
+    Preserve the Content-Encoding of the response body. By default, HTTPie
+    automatically decodes the response body if it is compressed with gzip,
+    deflate, or brotli. Use this option to disable automatic decoding and
+    receive the raw (compressed) response body.
+
+    This is useful when you want to save a compressed file without
+    decompression, or inspect the raw response exactly as sent by the server.
+
+    Example:
+
+        $ http --encoded example.org/file.gz > file.gz
+
+    """,
+)
+
 
 #######################################################################
 # Output processing
